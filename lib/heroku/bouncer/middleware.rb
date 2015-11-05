@@ -142,7 +142,7 @@ class Heroku::Bouncer::Middleware < Sinatra::Base
     if params['return_to'] && params['return_to'].length <= 255
       store_write(:return_to, params['return_to'])
     end
-    redirect to('/auth/heroku')
+    redirect to(heroku_auth_path_with_scope)
   end
 
 private
@@ -179,9 +179,15 @@ private
     @skip && @skip.call(env)
   end
 
+  def heroku_auth_path_with_scope
+    path  = '/auth/heroku'
+    path += "?scope=#{request.params['scope']}" if request.params['scope']
+    path
+  end
+
   def require_authentication
     store_write(:return_to, request.url)
-    redirect to('/auth/heroku')
+    redirect to(heroku_auth_path_with_scope)
   end
 
   def extract_option(options, option, default = nil)
