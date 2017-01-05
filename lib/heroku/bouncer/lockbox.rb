@@ -7,7 +7,7 @@ class Heroku::Bouncer::Lockbox < BasicObject
   end
 
   def lock(str)
-    aes = ::OpenSSL::Cipher::Cipher.new('aes-128-cbc').encrypt
+    aes = cipher_class.new('aes-128-cbc').encrypt
     aes.key = @key
     iv = ::OpenSSL::Random.random_bytes(aes.iv_len)
     aes.iv = iv
@@ -21,7 +21,7 @@ class Heroku::Bouncer::Lockbox < BasicObject
   # decrypt is too short to possibly be good aes data.
   def unlock(str)
     str = str.unpack('m0').first
-    aes = ::OpenSSL::Cipher::Cipher.new('aes-128-cbc').decrypt
+    aes = cipher_class.new('aes-128-cbc').decrypt
     aes.key = @key
     iv = str[0, aes.iv_len]
     aes.iv = iv
@@ -33,6 +33,15 @@ class Heroku::Bouncer::Lockbox < BasicObject
   end
 
 private
+
+  # ::OpenSSL::Cipher::Cipher is deprecated.
+  def cipher_class
+    if ::OpenSSL::Cipher.instance_methods(false).include?(:encrypt)
+      ::OpenSSL::Cipher
+    else
+      ::OpenSSL::Cipher::Cipher
+    end
+  end
 
   def self.generate_hmac(data, key)
     ::OpenSSL::HMAC.hexdigest(::OpenSSL::Digest::SHA1.new, key, data)
